@@ -394,29 +394,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: Check the script's built-in help: `./fcs-scanner.sh --help`
 - **CrowdStrike Support**: For FCS-specific issues, contact CrowdStrike support
 
-## Changelog
-
-### v1.3 (Latest)
-- Added full human-readable results display option
-- Implemented FCS CLI exit code passthrough
-- Enhanced proxy support with authentication
-- Improved error handling and logging
-
-### v1.2
-- Added comprehensive proxy support
-- Auto-detection of proxy settings
-- FCS CLI proxy configuration
-
-### v1.1
-- Added human-readable summary generation
-- Enhanced SARIF output format
-- Improved console output formatting
-
-### v1.0
-- Initial release
-- Basic FCS CLI download and scan functionality
-- JSON and SARIF output support
-
----
 
 **Note**: This script is not officially supported by CrowdStrike. It's a community tool designed to simplify FCS CLI usage and integration.
