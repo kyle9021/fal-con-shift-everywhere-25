@@ -30,8 +30,8 @@ A comprehensive shell script that automatically downloads the latest CrowdStrike
 
 1. Download the script:
 ```bash
-curl -O https://raw.githubusercontent.com/your-repo/fcs-scanner/main/fcs-scanner.sh
-chmod +x fcs-scanner.sh
+curl -O https://raw.githubusercontent.com/your-repo/fcs-scanner/main/fcs_cli_iac_scan.sh
+chmod +x fcs_cli_iac_scan.sh
 ```
 
 2. Install dependencies (if not already present):
@@ -60,13 +60,13 @@ brew install curl jq
 ### Basic Usage
 ```bash
 # Scan current directory with latest FCS CLI
-./fcs-scanner.sh
+./fcs_cli_iac_scan.sh
 
 # Scan specific directory
-./fcs-scanner.sh ./terraform
+./fcs_cli_iac_scan.sh ./terraform
 
 # Scan with previous CLI version
-./fcs-scanner.sh ./infrastructure 1
+./fcs_cli_iac_scan.sh ./infrastructure 1
 ```
 
 ### With Environment Variables
@@ -75,7 +75,7 @@ brew install curl jq
 export CS_BASE_API_URL="https://api.us-2.crowdstrike.com"
 export CS_CLIENT_ID="your_client_id"
 export CS_CLIENT_SECRET="your_client_secret"
-./fcs-scanner.sh
+./fcs_cli_iac_scan.sh
 ```
 
 ## Configuration
@@ -124,19 +124,19 @@ export CS_CLIENT_SECRET="your_client_secret"
 ### Development Workflow
 ```bash
 # Quick scan with brief summary
-./fcs-scanner.sh ./src
+./fcs_cli_iac_scan.sh ./src
 
 # Detailed analysis with full results
-SHOW_FULL_RESULTS=true ./fcs-scanner.sh ./terraform
+SHOW_FULL_RESULTS=true ./fcs_cli_iac_scan.sh ./terraform
 
 # Generate only SARIF for tool integration
-GENERATE_SUMMARY=false ./fcs-scanner.sh ./cloudformation
+GENERATE_SUMMARY=false ./fcs_cli_iac_scan.sh ./cloudformation
 ```
 
 ### CI/CD Integration
 ```bash
 # Fail build on security findings
-EXIT_WITH_FCS_CODE=true ./fcs-scanner.sh
+EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh
 
 # Complete CI/CD example
 #!/bin/bash
@@ -148,7 +148,7 @@ export CS_CLIENT_ID="$CROWDSTRIKE_CLIENT_ID"
 export CS_CLIENT_SECRET="$CROWDSTRIKE_CLIENT_SECRET"
 
 # Run scan and fail on findings
-EXIT_WITH_FCS_CODE=true ./fcs-scanner.sh ./infrastructure
+EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh ./infrastructure
 
 # Check exit code
 if [ $? -eq 40 ]; then
@@ -173,23 +173,23 @@ export NO_PROXY="localhost,127.0.0.1,.internal.company.com"
 export PROXY_USER="myusername"
 export PROXY_PASS="mypassword"
 
-./fcs-scanner.sh
+./fcs_cli_iac_scan.sh
 ```
 
 ### Advanced Usage
 ```bash
 # Use specific CLI version (n-2)
-./fcs-scanner.sh ./terraform 2
+./fcs_cli_iac_scan.sh ./terraform 2
 
 # Debug mode with full output
-DEBUG=true SHOW_FULL_RESULTS=true ./fcs-scanner.sh
+DEBUG=true SHOW_FULL_RESULTS=true ./fcs_cli_iac_scan.sh
 
 # Custom configuration
 SCAN_PATH=./infrastructure \
 VERSION_OFFSET=1 \
 GENERATE_SARIF=false \
 SHOW_FULL_RESULTS=true \
-./fcs-scanner.sh
+./fcs_cli_iac_scan.sh
 ```
 
 ## Output Files
@@ -247,7 +247,7 @@ curl -X POST "$CS_BASE_API_URL/oauth2/token" \
 curl --proxy "$HTTP_PROXY" -I https://api.crowdstrike.com
 
 # Enable debug mode
-DEBUG=true ./fcs-scanner.sh
+DEBUG=true ./fcs_cli_iac_scan.sh
 ```
 
 #### Missing Dependencies
@@ -261,7 +261,7 @@ command -v tar && echo "tar: OK" || echo "tar: MISSING"
 ### Debug Mode
 Enable detailed logging:
 ```bash
-DEBUG=true ./fcs-scanner.sh
+DEBUG=true ./fcs_cli_iac_scan.sh
 ```
 
 This provides:
@@ -292,7 +292,7 @@ jobs:
           CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
           CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
           EXIT_WITH_FCS_CODE: true
-        run: ./fcs-scanner.sh
+        run: ./fcs_cli_iac_scan.sh
         
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v2
@@ -316,8 +316,8 @@ pipeline {
         stage('Security Scan') {
             steps {
                 sh '''
-                    chmod +x fcs-scanner.sh
-                    EXIT_WITH_FCS_CODE=true ./fcs-scanner.sh
+                    chmod +x fcs_cli_iac_scan.sh
+                    EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh
                 '''
             }
             post {
@@ -358,8 +358,8 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    chmod +x fcs-scanner.sh
-    EXIT_WITH_FCS_CODE=true ./fcs-scanner.sh
+    chmod +x fcs_cli_iac_scan.sh
+    EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh
   displayName: 'Run security scan'
 
 - task: PublishBuildArtifacts@1
@@ -367,6 +367,62 @@ steps:
     pathToPublish: 'fcs-scan-results.sarif'
     artifactName: 'CodeAnalysisLogs'
   condition: always()
+```
+
+### Docker Integration
+```dockerfile
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    jq \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy script
+COPY fcs_cli_iac_scan.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/fcs_cli_iac_scan.sh
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh"]
+```
+
+Usage with Docker:
+```bash
+# Build image
+docker build -t fcs-scanner .
+
+# Run scan
+docker run --rm \
+  -v $(pwd):/workspace \
+  -e CS_BASE_API_URL="$CS_BASE_API_URL" \
+  -e CS_CLIENT_ID="$CS_CLIENT_ID" \
+  -e CS_CLIENT_SECRET="$CS_CLIENT_SECRET" \
+  fcs-scanner ./terraform
+```
+
+## Command Line Reference
+
+### Basic Syntax
+```bash
+./fcs_cli_iac_scan.sh [scan_directory] [version_offset]
+```
+
+### Arguments
+- `scan_directory` (optional): Directory to scan (default: current directory)
+- `version_offset` (optional): Version offset from latest (default: 0)
+  - `0` = latest version
+  - `1` = n-1 (previous version)
+  - `2` = n-2 (two versions back)
+
+### Help
+```bash
+./fcs_cli_iac_scan.sh --help
+./fcs_cli_iac_scan.sh -h
 ```
 
 ## Contributing
@@ -391,8 +447,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - **Issues**: Report bugs and request features via GitHub Issues
-- **Documentation**: Check the script's built-in help: `./fcs-scanner.sh --help`
+- **Documentation**: Check the script's built-in help: `./fcs_cli_iac_scan.sh --help`
 - **CrowdStrike Support**: For FCS-specific issues, contact CrowdStrike support
+
 
 
 **Note**: This script is not officially supported by CrowdStrike. It's a community tool designed to simplify FCS CLI usage and integration.
