@@ -30,7 +30,7 @@ A comprehensive shell script that automatically downloads the latest CrowdStrike
 
 1. Download the script:
 ```bash
-curl -O https://raw.githubusercontent.com/your-repo/fcs-scanner/main/fcs_cli_iac_scan.sh
+curl -O https://raw.githubusercontent.com/kyle9021/fcs-scanner/main/fcs_cli_iac_scan.sh # or git clone https://github.com/kyle9021/FCS-CLI-downloader-scanner
 chmod +x fcs_cli_iac_scan.sh
 ```
 
