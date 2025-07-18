@@ -1,6 +1,6 @@
 # CrowdStrike FCS CLI Downloader and Scanner
 
-A comprehensive shell script that automatically downloads the latest CrowdStrike Falcon Cloud Security (FCS) CLI tool and executes Infrastructure as Code (IaC) security scans with enhanced reporting capabilities.
+A comprehensive shell script that automatically downloads the latest CrowdStrike Falcon Cloud Security (FCS) CLI tool and executes Infrastructure as Code (IaC) security scans with enhanced reporting capabilities..
 
 ## Features
 
