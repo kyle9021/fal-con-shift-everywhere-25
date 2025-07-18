@@ -1,5 +1,10 @@
-name: Security Scan with Docker
+name: Security Scan with Docker Secrets (heredoc)
 on: [push, pull_request]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   security-scan:
@@ -7,21 +12,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Build and Run Scanner
-        env:
-          CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
-          CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
-          CS_BASE_API_URL: ${{ secrets.CROWDSTRIKE_API_URL }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker image with secrets
         run: |
           docker build \
-            --build-arg CLIENT_ID="${CS_CLIENT_ID}" \
-            --build-arg CLIENT_SECRET="${CS_CLIENT_SECRET}" \
-            --build-arg API_URL="${CS_BASE_API_URL}" \
+            --secret id=client_id,src=<(cat <<< "${{ secrets.CROWDSTRIKE_CLIENT_ID }}") \
+            --secret id=client_secret,src=<(cat <<< "${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}") \
+            --secret id=api_url,src=<(cat <<< "${{ secrets.CROWDSTRIKE_API_URL }}") \
             --platform linux/amd64 \
             -t fcs-scanner .
-          
+        
+      - name: Run Security Scan
+        run: |
           docker run --rm \
             --platform linux/amd64 \
             -v "$(pwd):/workspace" \
             -e EXIT_WITH_FCS_CODE=true \
             fcs-scanner
+        
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('fcs-scan-results.sarif') != ''
+        with:
+          sarif_file: fcs-scan-results.sarif
+        continue-on-error: true
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            fcs-scan-results.json
+            fcs-scan-results.sarif
+            fcs-scan-summary.txt
