@@ -8,7 +8,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Install dependencies
-        run: apt-get update && apt-get install -y curl jq tar
+        run: sudo apt-get update && sudo apt-get install -y curl jq tar
         # No sudo needed in GitHub Actions runners
         
       - name: Run FCS Scan
