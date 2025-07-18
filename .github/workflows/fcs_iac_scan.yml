@@ -1,0 +1,38 @@
+name: FCS IAC Security Scan
+on: [push, pull_request]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y curl jq tar
+        # No sudo needed in GitHub Actions runners
+        
+      - name: Run FCS Scan
+        env:
+          CS_BASE_API_URL: ${{ secrets.CROWDSTRIKE_API_URL }}
+          CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
+          CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
+          EXIT_WITH_FCS_CODE: true
+        run: |
+          chmod +x fcs_cli_iac_scan.sh
+          ./fcs_cli_iac_scan.sh
+        
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: fcs-scan-results.sarif
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            fcs-scan-results.json
+            fcs-scan-results.sarif
+            fcs-scan-summary.txt
