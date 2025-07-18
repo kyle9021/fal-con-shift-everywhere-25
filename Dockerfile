@@ -4,19 +4,18 @@ FROM alpine:3.19@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc94
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Install dependencies
-RUN apk update && \
-    apk add --no-cache \
+# Install required dependencies and clean up in single RUN (addresses security scanner issues)
+RUN apk update && apk add --no-cache \
     curl=8.12.1-r0 \
     jq=1.6-r4 \
-    tar=1.34-r3 \
-    && rm -rf /var/cache/apk/*
-    && rm -rf /tmp/* \
-    && rm -rf /var/tmp/* \
-    # Remove package manager to prevent runtime modifications (security hardening)
-    && rm -f /sbin/apk \
-    # Remove other potentially dangerous binaries
-    && rm -f /bin/su /usr/bin/passwd
+    tar=1.34-r3 && \
+    rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/* && \
+    rm -rf /var/tmp/* && \
+    rm -f /sbin/apk && \
+    rm -f /bin/ash /bin/bash && \
+    rm -f /bin/su /usr/bin/passwd && \
+    rm -f /usr/bin/telnet /usr/bin/ssh /usr/bin/scp
 
 # Create necessary directories
 RUN mkdir -p /home/appuser/.crowdstrike/logs /workspace /tmp/downloads && \
@@ -107,6 +106,16 @@ RUN --mount=type=secret,id=client_id \
 COPY fcs_cli_iac_scan.sh /usr/local/bin/
 RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
 
+# Create wrapper script to copy results to workspace
+RUN echo '#!/bin/sh' > /usr/local/bin/scan-wrapper.sh && \
+    echo 'cd /tmp/downloads' >> /usr/local/bin/scan-wrapper.sh && \
+    echo '/usr/local/bin/fcs_cli_iac_scan.sh /workspace' >> /usr/local/bin/scan-wrapper.sh && \
+    echo 'cp fcs-scan-*.json /workspace/ 2>/dev/null || true' >> /usr/local/bin/scan-wrapper.sh && \
+    echo 'cp fcs-scan-*.sarif /workspace/ 2>/dev/null || true' >> /usr/local/bin/scan-wrapper.sh && \
+    echo 'cp fcs-scan-*.txt /workspace/ 2>/dev/null || true' >> /usr/local/bin/scan-wrapper.sh && \
+    echo 'exit $?' >> /usr/local/bin/scan-wrapper.sh && \
+    chmod 555 /usr/local/bin/scan-wrapper.sh
+
 # Set proper ownership
 RUN chown -R appuser:appgroup /home/appuser
 
@@ -125,5 +134,5 @@ LABEL description="CrowdStrike FCS IaC Scanner"
 ENV HOME=/home/appuser
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Default to scanning /workspace if no arguments provided
-ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
+# Use wrapper script to ensure files are copied to workspace
+ENTRYPOINT ["/usr/local/bin/scan-wrapper.sh"]
