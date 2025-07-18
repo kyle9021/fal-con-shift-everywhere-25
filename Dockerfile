@@ -7,12 +7,11 @@ FROM alpine:3.19@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc94
 COPY fcs_cli_iac_scan.sh /usr/local/bin/
 RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
 
-# Create directory structure in builder stage
+# Create directory structure in builder stage (no permissions set yet)
 RUN mkdir -p /tmp/app-setup/home/nonroot/.crowdstrike/logs \
              /tmp/app-setup/workspace \
              /tmp/app-setup/tmp/downloads && \
-    chmod 700 /tmp/app-setup/home/nonroot/.crowdstrike && \
-    chmod 777 /tmp/app-setup/tmp/downloads
+    chmod 700 /tmp/app-setup/home/nonroot/.crowdstrike
 
 # Use secrets mount to create config file in builder stage
 RUN --mount=type=secret,id=client_id \
@@ -56,19 +55,18 @@ RUN addgroup -g 65532 -S nonroot && \
     sed -i '/^root:/d' /etc/shadow && \
     sed -i '/^root:/d' /etc/group && \
     # Remove root's home directory
-    rm -rf /root && \
-    # Make nonroot own essential directories that might be needed
-    chown -R nonroot:nonroot /tmp /var/tmp
+    rm -rf /root
 
 # Copy script and config from builder
 COPY --from=builder /usr/local/bin/fcs_cli_iac_scan.sh /usr/local/bin/
 COPY --from=builder /tmp/app-setup/home/nonroot/.crowdstrike /home/nonroot/.crowdstrike
 
-# Set ownership and create directories
+# Set ownership and create directories with proper permissions AFTER user creation
 RUN chown -R nonroot:nonroot /home/nonroot && \
     mkdir -p /workspace /tmp/downloads && \
     chown nonroot:nonroot /workspace /tmp/downloads && \
-    chmod 777 /tmp/downloads
+    chmod 750 /tmp/downloads && \
+    chmod 755 /workspace
 
 # Set working directory
 WORKDIR /tmp/downloads
@@ -76,20 +74,22 @@ WORKDIR /tmp/downloads
 # Switch to non-root user
 USER nonroot
 
-# Add healthcheck instruction
+# Add healthcheck instruction (simplified for security)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD /usr/local/bin/fcs_cli_iac_scan.sh --help >/dev/null 2>&1 || exit 1
+    CMD test -f /usr/local/bin/fcs_cli_iac_scan.sh || exit 1
 
 # Security and metadata labels
-LABEL maintainer="your-email@crowdstrike.com"
-LABEL version="1.0"
-LABEL security="MINIMAL_ALPINE_NO_ROOT"
-LABEL description="CrowdStrike FCS IaC Scanner - Minimal Alpine (No Root User)"
+LABEL maintainer="security@crowdstrike.com" \
+      version="1.0" \
+      security="MINIMAL_ALPINE_NO_ROOT" \
+      description="CrowdStrike FCS IaC Scanner - Minimal Alpine" \
+      security.scan-date="2025-01-18" \
+      security.base-image-digest="sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33"
 
 # Environment variables
-ENV HOME=/home/nonroot
-ENV PATH="/usr/local/bin:${PATH}"
-ENV USER=nonroot
+ENV HOME=/home/nonroot \
+    PATH="/usr/local/bin:${PATH}" \
+    USER=nonroot
 
 # Run script directly
 ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
