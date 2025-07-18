@@ -11,6 +11,7 @@ A comprehensive shell script that automatically downloads the latest CrowdStrike
 - **Interactive & Non-Interactive**: Works in both manual and CI/CD environments
 - **Comprehensive Reporting**: Detailed security findings with remediation guidance
 - **Cross-Platform**: Supports Linux, macOS, and other Unix-like systems
+- **Multi-Architecture**: Automatically detects and downloads correct binaries for amd64 and arm64 architectures
 
 ## Prerequisites
 
@@ -30,7 +31,12 @@ A comprehensive shell script that automatically downloads the latest CrowdStrike
 
 1. Download the script:
 ```bash
-curl -O https://raw.githubusercontent.com/kyle9021/fcs-scanner/main/fcs_cli_iac_scan.sh # or git clone https://github.com/kyle9021/FCS-CLI-downloader-scanner
+# Download the script directly
+curl -O https://raw.githubusercontent.com/kyle9021/FCS-CLI-downloader-scanner/main/fcs_cli_iac_scan.sh
+
+# Or clone the entire repository
+git clone https://github.com/kyle9021/FCS-CLI-downloader-scanner.git
+cd FCS-CLI-downloader-scanner
 chmod +x fcs_cli_iac_scan.sh
 ```
 
@@ -600,6 +606,30 @@ rm -f /tmp/client_id /tmp/client_secret /tmp/api_url
 ./fcs_cli_iac_scan.sh --help
 ./fcs_cli_iac_scan.sh -h
 ```
+## Security Best Practices
+
+### Credential Management
+- **Never commit credentials** to version control
+- Use secure credential stores in CI/CD
+- For Docker deployments, use Docker secrets
+- Regularly rotate FCS API credentials
+
+### File Permissions
+- The script automatically sets secure permissions on configuration files (600)
+- Ensure the script itself has appropriate execute permissions (755)
+
+### Network Security
+- The script supports corporate proxy environments
+- All API communications use HTTPS
+- Proxy authentication is supported for corporate environments
+
+### Container Security
+- Docker images run as non-root user
+- Minimal base images (Alpine Linux) for reduced attack surface
+- Secrets are handled securely using Docker BuildKit secrets
+- Health checks are included for container monitoring
+
+
 
 ## Contributing
 
@@ -625,7 +655,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Documentation**: Check the script's built-in help: `./fcs_cli_iac_scan.sh --help`
 - **CrowdStrike Support**: For FCS-specific issues, contact CrowdStrike support
-
 
 
 **Note**: This script is not officially supported by CrowdStrike. It's a community tool designed to simplify FCS CLI usage and integration.
