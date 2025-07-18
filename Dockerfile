@@ -107,9 +107,9 @@ RUN chown -R appuser:appgroup /home/appuser
 WORKDIR /tmp/downloads
 USER appuser
 
-# Check to ensure config file is readable
+# Add healthcheck instruction
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD test -r /home/appuser/.crowdstrike/fcs.json || exit 1
+    CMD /usr/local/bin/fcs_cli_iac_scan.sh --help >/dev/null 2>&1 || exit 1
 
 LABEL maintainer="your-email@crowdstrike.com"
 LABEL version="1.0"
@@ -119,4 +119,5 @@ LABEL description="CrowdStrike FCS IaC Scanner"
 ENV HOME=/home/appuser
 ENV PATH="/usr/local/bin:${PATH}"
 
-ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh"]
+# Default to scanning /workspace if no arguments provided
+ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
