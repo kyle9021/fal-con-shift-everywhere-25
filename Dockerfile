@@ -11,6 +11,12 @@ RUN apk update && \
     jq=1.6-r4 \
     tar=1.34-r3 \
     && rm -rf /var/cache/apk/*
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/* \
+    # Remove package manager to prevent runtime modifications (security hardening)
+    && rm -f /sbin/apk \
+    # Remove other potentially dangerous binaries
+    && rm -f /bin/su /usr/bin/passwd
 
 # Create necessary directories
 RUN mkdir -p /home/appuser/.crowdstrike/logs /workspace /tmp/downloads && \
