@@ -1,4 +1,4 @@
-name: Security Scan with Docker Secrets
+name: FCS IAC Security Scan and Build Test using Docker Secrets
 on: [push, pull_request]
 
 permissions:
@@ -41,6 +41,7 @@ jobs:
             --platform linux/amd64 \
             -v "$(pwd):/workspace" \
             -e EXIT_WITH_FCS_CODE=true \
+            -e SHOW_FULL_RESULTS=true \
             fcs-scanner
         
       - name: Upload SARIF
