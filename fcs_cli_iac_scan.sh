@@ -76,6 +76,15 @@ PROXY_PASS="${PROXY_PASS:-}"
 # Detect current platform
 OS_TYPE=$(uname | awk '{print tolower(substr($1,1,1)) substr($1,2)}')
 ARCH_TYPE=$(uname -m)
+# Fix architecture naming for API compatibility
+case "$ARCH_TYPE" in
+    x86_64)
+        ARCH_TYPE="amd64"
+        ;;
+    aarch64)
+        ARCH_TYPE="arm64"
+        ;;
+esac
 
 # Global variable to store FCS CLI exit code
 FCS_EXIT_CODE=0
@@ -764,6 +773,60 @@ convert_json_to_sarif() {
 }
 
 #
+# Checks for credentials in multiple locations
+# Sets global variables: CS_BASE_API_URL, CS_CLIENT_ID, CS_CLIENT_SECRET
+# Returns: 0 if credentials found, 1 if not found
+#
+get_credentials() {
+    # First check environment variables
+    if [ -n "$CS_BASE_API_URL" ] && [ -n "$CS_CLIENT_ID" ] && [ -n "$CS_CLIENT_SECRET" ]; then
+        log "INFO" "Using credentials from environment variables"
+        return 0
+    fi
+
+    # Check for config file
+    config_file="$HOME/.crowdstrike/fcs.json"
+    if [ -f "$config_file" ] && [ -r "$config_file" ]; then
+        log "INFO" "Found configuration file: $config_file"
+
+        # Extract credentials from config file
+        if ! command -v jq >/dev/null 2>&1; then
+            log "ERROR" "jq is required to parse config file"
+            return 1
+        fi
+
+        # Read values from config file
+        local profile_name
+        profile_name=$(jq -r '.profile // "default"' "$config_file")
+
+        # Extract credentials from the specified profile
+        CS_CLIENT_ID=$(jq -r --arg profile "$profile_name" '.profiles[$profile].client_id // empty' "$config_file")
+        CS_CLIENT_SECRET=$(jq -r --arg profile "$profile_name" '.profiles[$profile].client_secret // empty' "$config_file")
+        CS_BASE_API_URL=$(jq -r --arg profile "$profile_name" '.profiles[$profile].falcon_domains.api // empty' "$config_file")
+
+        if [ -n "$CS_BASE_API_URL" ] && [ -n "$CS_CLIENT_ID" ] && [ -n "$CS_CLIENT_SECRET" ]; then
+            log "INFO" "Using credentials from config file (profile: $profile_name)"
+            return 0
+        else
+            log "WARN" "Config file found but missing required credentials"
+        fi
+    fi
+
+    # If we get here, no valid credentials were found
+    if is_non_interactive; then
+        log "ERROR" "No valid credentials found in environment variables or config file"
+        log "ERROR" "Please set CS_BASE_API_URL, CS_CLIENT_ID, and CS_CLIENT_SECRET environment variables"
+        log "ERROR" "Or provide a valid configuration file at: $config_file"
+        return 1
+    fi
+
+    # If interactive, prompt for credentials
+    log "INFO" "No credentials found, prompting for input..."
+    prompt_for_credentials
+    return 0
+}
+
+#
 # Prompts user for CrowdStrike credentials if not already set
 # Sets global variables: CS_BASE_API_URL, CS_CLIENT_ID, CS_CLIENT_SECRET
 #
@@ -1302,8 +1365,10 @@ main() {
     # Detect and configure proxy settings
     detect_and_configure_proxy
 
-    # Prompt for credentials if not set
-    prompt_for_credentials
+    # Get credentials from environment or config file
+    if ! get_credentials; then
+        exit 1
+    fi
 
     # Test proxy connectivity if configured
     test_proxy_connectivity
