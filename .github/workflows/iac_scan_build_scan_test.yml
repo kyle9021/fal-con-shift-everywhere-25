@@ -41,7 +41,7 @@ jobs:
             --platform linux/amd64 \
             -v "$(pwd):/workspace" \
             -e EXIT_WITH_FCS_CODE=true \
-            fcs-scanner /workspace
+            fcs-scanner
         
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
