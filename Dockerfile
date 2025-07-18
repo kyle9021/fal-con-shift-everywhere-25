@@ -79,7 +79,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD test -f /usr/local/bin/fcs_cli_iac_scan.sh || exit 1
 
 # Security and metadata labels
-LABEL maintainer="security@crowdstrike.com" \
+LABEL maintainer="your-email@email.com" \
       version="1.0" \
       security="MINIMAL_ALPINE_NO_ROOT" \
       description="CrowdStrike FCS IaC Scanner - Minimal Alpine" \
