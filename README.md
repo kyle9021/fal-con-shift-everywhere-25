@@ -277,14 +277,23 @@ This provides:
 name: Security Scan
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install dependencies
-        run: apt-get update && apt-get install -y curl jq tar
+      - name: Verify dependencies (optional)
+        run: |
+          echo "Checking dependencies..."
+          curl --version
+          jq --version
+          tar --version
         
       - name: Run FCS Scan
         env:
@@ -298,9 +307,10 @@ jobs:
         
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('fcs-scan-results.sarif') != ''
         with:
           sarif_file: fcs-scan-results.sarif
+        continue-on-error: true
           
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
