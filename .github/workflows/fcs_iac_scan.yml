@@ -1,6 +1,11 @@
 name: FCS IAC Security Scan
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
