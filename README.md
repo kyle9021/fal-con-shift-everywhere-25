@@ -597,6 +597,7 @@ docker run --rm \
   --platform linux/amd64 \
   -v "$(pwd):/workspace" \
   -e EXIT_WITH_FCS_CODE=true \
+  -e SHOW_FULL_RESULTS=true \
   fcs-scanner
 
 # Clean up
