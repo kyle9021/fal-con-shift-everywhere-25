@@ -1,4 +1,4 @@
-name: FCS IAC Security Scan
+name: Security Scan
 on: [push, pull_request]
 
 permissions:
@@ -12,9 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y curl jq tar
-        # No sudo needed in GitHub Actions runners
+      - name: Verify dependencies (optional)
+        run: |
+          echo "Checking dependencies..."
+          curl --version
+          jq --version
+          tar --version
         
       - name: Run FCS Scan
         env:
@@ -28,9 +31,10 @@ jobs:
         
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('fcs-scan-results.sarif') != ''
         with:
           sarif_file: fcs-scan-results.sarif
+        continue-on-error: true
           
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
