@@ -562,7 +562,7 @@ ENV PATH="/usr/local/bin:${PATH}"
 ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
 ```
 
-Usage with Docker:
+Usage with Docker if buillding locally:
 ```bash
 # Create secrets
 echo "$CS_CLIENT_ID" > /tmp/client_id
