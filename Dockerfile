@@ -12,11 +12,10 @@ RUN apk update && \
     tar=1.34-r3 \
     && rm -rf /var/cache/apk/*
 
-# Create necessary directories with proper permissions
-RUN mkdir -p /home/appuser/.crowdstrike/logs /workspace /home/appuser/downloads && \
+# Create necessary directories
+RUN mkdir -p /home/appuser/.crowdstrike/logs /workspace /tmp/downloads && \
     chmod 700 /home/appuser/.crowdstrike && \
-    chmod 755 /home/appuser/downloads && \
-    chmod 755 /workspace
+    chmod 777 /tmp/downloads
 
 # Use secrets mount to create config file
 RUN --mount=type=secret,id=client_id \
@@ -103,23 +102,21 @@ COPY fcs_cli_iac_scan.sh /usr/local/bin/
 RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
 
 # Set proper ownership
-RUN chown -R appuser:appgroup /home/appuser /workspace
+RUN chown -R appuser:appgroup /home/appuser
 
-# Set working directory to user's downloads folder (writable)
-WORKDIR /home/appuser/downloads
-
-# Switch to non-root user
+WORKDIR /tmp/downloads
 USER appuser
 
-# Set security labels
+# Add healthcheck instruction
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD /usr/local/bin/fcs_cli_iac_scan.sh --help >/dev/null 2>&1 || exit 1
+
 LABEL maintainer="your-email@crowdstrike.com"
 LABEL version="1.0"
 LABEL security="SCANNED"
 LABEL description="CrowdStrike FCS IaC Scanner"
 
-# Set environment variables
 ENV HOME=/home/appuser
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Use shell form to ensure proper directory handling
-ENTRYPOINT ["/bin/sh", "-c", "cd /home/appuser/downloads && /usr/local/bin/fcs_cli_iac_scan.sh /workspace"]
+ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh"]
