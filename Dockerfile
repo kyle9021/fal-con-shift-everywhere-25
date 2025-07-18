@@ -1,138 +1,95 @@
 # syntax=docker/dockerfile:1
-FROM alpine:3.19@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33
 
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Build stage
+FROM alpine:3.19@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33 AS builder
 
-# Install required dependencies and clean up in single RUN (addresses security scanner issues)
-RUN apk update && apk add --no-cache \
-    curl=8.12.1-r0 \
-    jq=1.6-r4 \
-    tar=1.34-r3 && \
-    rm -rf /var/cache/apk/* && \
-    rm -rf /tmp/* && \
-    rm -rf /var/tmp/* && \
-    rm -f /sbin/apk && \
-    rm -f /bin/ash /bin/bash && \
-    rm -f /bin/su /usr/bin/passwd && \
-    rm -f /usr/bin/telnet /usr/bin/ssh /usr/bin/scp
+# Copy script
+COPY fcs_cli_iac_scan.sh /usr/local/bin/
+RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
 
-# Create necessary directories
-RUN mkdir -p /home/appuser/.crowdstrike/logs /workspace /tmp/downloads && \
-    chmod 700 /home/appuser/.crowdstrike && \
-    chmod 777 /tmp/downloads
+# Create directory structure in builder stage
+RUN mkdir -p /tmp/app-setup/home/nonroot/.crowdstrike/logs \
+             /tmp/app-setup/workspace \
+             /tmp/app-setup/tmp/downloads && \
+    chmod 700 /tmp/app-setup/home/nonroot/.crowdstrike && \
+    chmod 777 /tmp/app-setup/tmp/downloads
 
-# Use secrets mount to create config file
+# Use secrets mount to create config file in builder stage
 RUN --mount=type=secret,id=client_id \
     --mount=type=secret,id=client_secret \
     --mount=type=secret,id=api_url \
     CLIENT_ID=$(cat /run/secrets/client_id) && \
     CLIENT_SECRET=$(cat /run/secrets/client_secret) && \
     API_URL=$(cat /run/secrets/api_url) && \
-    echo "{\
-    \"schema_version\": \"\",\
-    \"version\": \"1.0\",\
-    \"verbose\": false,\
-    \"profile\": \"default\",\
-    \"profiles_path\": \"/home/appuser/.crowdstrike/fcs_profiles.json\",\
-    \"timeout\": 60,\
-    \"security\": {\
-        \"encryption\": {\
-            \"type\": \"keyring\",\
-            \"passphrase_path\": \"/home/appuser/.crowdstrike/passphrase\"\
-        },\
-        \"credentials_path\": \"/home/appuser/.crowdstrike/fcs_credentials.enc.json\"\
-    },\
-    \"scan\": {\
-        \"iac\": {\
-            \"path\": \"\",\
-            \"output_path\": \"/home/appuser/.crowdstrike/logs\",\
-            \"upload_results\": true,\
-            \"policy_rule\": \"default\",\
-            \"disable_secrets_scan\": false,\
-            \"exclude_paths\": [],\
-            \"exclude_categories\": [],\
-            \"exclude_severities\": [],\
-            \"fail_on\": [\"critical\", \"high\", \"medium\", \"low\", \"info\"],\
-            \"project_owners\": []\
-        },\
-        \"image\": {\
-            \"path\": \"\",\
-            \"output\": \"\",\
-            \"image-output-path\": \"\",\
-            \"upload\": true,\
-            \"socket\": \"\",\
-            \"temp_dir\": \"\",\
-            \"source_override\": \"\",\
-            \"username\": \"\",\
-            \"password\": \"\",\
-            \"registry\": {\
-                \"url\": \"\",\
-                \"type\": \"\",\
-                \"port\": \"443\",\
-                \"insecure\": false\
-            },\
-            \"vulnerability_only\": false\
-        }\
-    },\
-    \"report\": {\
-        \"format\": \"json\",\
-        \"vuln_score_threshold\": 0,\
-        \"vuln_severity_threshold\": \"\"\
-    },\
-    \"credentials\": {\
-        \"output_type\": \"table\",\
-        \"show_secrets\": false,\
-        \"force\": false,\
-        \"secure\": false,\
-        \"type\": \"\"\
-    },\
-    \"profiles\": {\
-        \"default\": {\
-            \"falcon_region\": \"us-1\",\
-            \"client_id\": \"${CLIENT_ID}\",\
-            \"client_secret\": \"${CLIENT_SECRET}\",\
-            \"falcon_domains\": {\
-                \"api\": \"${API_URL}\",\
-                \"container_upload\": \"https://container-upload.us-1.crowdstrike.com\",\
-                \"image_assessment\": \"https://container-upload.us-1.crowdstrike.com\"\
-            }\
-        }\
-    }\
-}" | jq '.' > /home/appuser/.crowdstrike/fcs.json && \
-    chmod 600 /home/appuser/.crowdstrike/fcs.json
+    printf '{\n' > /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '    "schema_version": "",\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '    "version": "1.0",\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '    "verbose": false,\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '    "profile": "default",\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '    "profiles": {\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '        "default": {\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '            "falcon_region": "us-1",\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '            "client_id": "%s",\n' "${CLIENT_ID}" >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '            "client_secret": "%s",\n' "${CLIENT_SECRET}" >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '            "falcon_domains": {\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '                "api": "%s",\n' "${API_URL}" >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '                "container_upload": "https://container-upload.us-1.crowdstrike.com",\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '                "image_assessment": "https://container-upload.us-1.crowdstrike.com"\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '            }\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '        }\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '    }\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    printf '}\n' >> /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json && \
+    chmod 600 /tmp/app-setup/home/nonroot/.crowdstrike/fcs.json
 
-# Copy script
-COPY fcs_cli_iac_scan.sh /usr/local/bin/
-RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
+# Runtime stage - minimal Alpine with shell
+FROM alpine:3.19@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33
 
-# Create wrapper script to copy results to workspace
-RUN echo '#!/bin/sh' > /usr/local/bin/scan-wrapper.sh && \
-    echo 'cd /tmp/downloads' >> /usr/local/bin/scan-wrapper.sh && \
-    echo '/usr/local/bin/fcs_cli_iac_scan.sh /workspace' >> /usr/local/bin/scan-wrapper.sh && \
-    echo 'cp fcs-scan-*.json /workspace/ 2>/dev/null || true' >> /usr/local/bin/scan-wrapper.sh && \
-    echo 'cp fcs-scan-*.sarif /workspace/ 2>/dev/null || true' >> /usr/local/bin/scan-wrapper.sh && \
-    echo 'cp fcs-scan-*.txt /workspace/ 2>/dev/null || true' >> /usr/local/bin/scan-wrapper.sh && \
-    echo 'exit $?' >> /usr/local/bin/scan-wrapper.sh && \
-    chmod 555 /usr/local/bin/scan-wrapper.sh
+# Create nonroot user, install dependencies, then remove root user
+RUN addgroup -g 65532 -S nonroot && \
+    adduser -u 65532 -S -G nonroot -h /home/nonroot nonroot && \
+    apk add --no-cache \
+        curl=8.12.1-r0 \
+        jq=1.6-r4 \
+        tar=1.34-r3 && \
+    # Remove root user and group (but keep essential system accounts)
+    sed -i '/^root:/d' /etc/passwd && \
+    sed -i '/^root:/d' /etc/shadow && \
+    sed -i '/^root:/d' /etc/group && \
+    # Remove root's home directory
+    rm -rf /root && \
+    # Make nonroot own essential directories that might be needed
+    chown -R nonroot:nonroot /tmp /var/tmp
 
-# Set proper ownership
-RUN chown -R appuser:appgroup /home/appuser
+# Copy script and config from builder
+COPY --from=builder /usr/local/bin/fcs_cli_iac_scan.sh /usr/local/bin/
+COPY --from=builder /tmp/app-setup/home/nonroot/.crowdstrike /home/nonroot/.crowdstrike
 
+# Set ownership and create directories
+RUN chown -R nonroot:nonroot /home/nonroot && \
+    mkdir -p /workspace /tmp/downloads && \
+    chown nonroot:nonroot /workspace /tmp/downloads && \
+    chmod 777 /tmp/downloads
+
+# Set working directory
 WORKDIR /tmp/downloads
-USER appuser
+
+# Switch to non-root user
+USER nonroot
 
 # Add healthcheck instruction
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD /usr/local/bin/fcs_cli_iac_scan.sh --help >/dev/null 2>&1 || exit 1
 
+# Security and metadata labels
 LABEL maintainer="your-email@crowdstrike.com"
 LABEL version="1.0"
-LABEL security="SCANNED"
-LABEL description="CrowdStrike FCS IaC Scanner"
+LABEL security="MINIMAL_ALPINE_NO_ROOT"
+LABEL description="CrowdStrike FCS IaC Scanner - Minimal Alpine (No Root User)"
 
-ENV HOME=/home/appuser
+# Environment variables
+ENV HOME=/home/nonroot
 ENV PATH="/usr/local/bin:${PATH}"
+ENV USER=nonroot
 
-# Use wrapper script to ensure files are copied to workspace
-ENTRYPOINT ["/usr/local/bin/scan-wrapper.sh"]
+# Run script directly
+ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
