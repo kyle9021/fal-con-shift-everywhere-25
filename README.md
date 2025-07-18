@@ -280,7 +280,7 @@ This provides:
 
 ### GitHub Actions
 ```yaml
-name: Security Scan
+name: FCS IaC Security Scan
 on: [push, pull_request]
 
 permissions:
@@ -306,6 +306,7 @@ jobs:
           CS_BASE_API_URL: ${{ secrets.CROWDSTRIKE_API_URL }}
           CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
           CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
+          SHOW_FULL_RESULTS: true
           EXIT_WITH_FCS_CODE: true
         run: |
           chmod +x fcs_cli_iac_scan.sh
