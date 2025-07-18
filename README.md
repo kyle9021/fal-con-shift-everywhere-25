@@ -557,20 +557,28 @@ ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
 
 Usage with Docker:
 ```bash
-# Build image
+# Create secrets
+echo "$CS_CLIENT_ID" > /tmp/client_id
+echo "$CS_CLIENT_SECRET" > /tmp/client_secret
+echo "$CS_BASE_API_URL" > /tmp/api_url
+
+# Build
 docker build \
-  --build-arg CLIENT_ID="$CS_CLIENT_ID" \
-  --build-arg CLIENT_SECRET="$CS_CLIENT_SECRET" \
-  --build-arg API_URL="$CS_BASE_API_URL" \
+  --secret id=client_id,src=/tmp/client_id \
+  --secret id=client_secret,src=/tmp/client_secret \
+  --secret id=api_url,src=/tmp/api_url \
   --platform linux/amd64 \
   -t fcs-scanner .
 
-
-# Run scan
+# Run
 docker run --rm \
   --platform linux/amd64 \
   -v "$(pwd):/workspace" \
+  -e EXIT_WITH_FCS_CODE=true \
   fcs-scanner
+
+# Clean up
+rm -f /tmp/client_id /tmp/client_secret /tmp/api_url
 ```
 
 ## Command Line Reference
