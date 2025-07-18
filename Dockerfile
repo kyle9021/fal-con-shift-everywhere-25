@@ -102,18 +102,10 @@ RUN --mount=type=secret,id=client_id \
 COPY fcs_cli_iac_scan.sh /usr/local/bin/
 RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
 
-# Create wrapper script that ensures proper working directory
-RUN echo '#!/bin/sh\n\
-# Ensure we have a writable working directory for downloads\n\
-cd /home/appuser/downloads\n\
-# Run the scan with the workspace as the target\n\
-exec /usr/local/bin/fcs_cli_iac_scan.sh /workspace "$@"' > /usr/local/bin/wrapper.sh && \
-    chmod 555 /usr/local/bin/wrapper.sh
-
 # Set proper ownership
 RUN chown -R appuser:appgroup /home/appuser /workspace
 
-# Set working directory to user's home downloads folder
+# Set working directory to user's downloads folder (writable)
 WORKDIR /home/appuser/downloads
 
 # Switch to non-root user
@@ -129,5 +121,5 @@ LABEL description="CrowdStrike FCS IaC Scanner"
 ENV HOME=/home/appuser
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Use wrapper script
-ENTRYPOINT ["/usr/local/bin/wrapper.sh"]
+# Use shell form to ensure proper directory handling
+ENTRYPOINT ["/bin/sh", "-c", "cd /home/appuser/downloads && /usr/local/bin/fcs_cli_iac_scan.sh /workspace"]
