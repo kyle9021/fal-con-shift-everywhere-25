@@ -281,10 +281,10 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y curl jq
+        run: apt-get update && apt-get install -y curl jq tar
         
       - name: Run FCS Scan
         env:
@@ -292,13 +292,25 @@ jobs:
           CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
           CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
           EXIT_WITH_FCS_CODE: true
-        run: ./fcs_cli_iac_scan.sh
+        run: |
+          chmod +x fcs_cli_iac_scan.sh
+          ./fcs_cli_iac_scan.sh
         
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: fcs-scan-results.sarif
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            fcs-scan-results.json
+            fcs-scan-results.sarif
+            fcs-scan-summary.txt
 ```
 
 ### Jenkins Pipeline
@@ -313,6 +325,23 @@ pipeline {
     }
     
     stages {
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    # Check if running as root or if packages are already available
+                    if ! command -v curl &> /dev/null; then
+                        if [ "$EUID" -eq 0 ]; then
+                            apt-get update && apt-get install -y curl jq tar
+                        else
+                            echo "Dependencies not found and not running as root"
+                            echo "Please ensure curl, jq, and tar are installed"
+                            exit 1
+                        fi
+                    fi
+                '''
+            }
+        }
+        
         stage('Security Scan') {
             steps {
                 sh '''
@@ -323,6 +352,13 @@ pipeline {
             post {
                 always {
                     archiveArtifacts artifacts: 'fcs-scan-*.{json,sarif,txt}', allowEmptyArchive: true
+                    
+                    script {
+                        if (fileExists('fcs-scan-results.sarif')) {
+                            recordIssues enabledForFailure: true, tools: [sarif(pattern: 'fcs-scan-results.sarif')]
+                        }
+                    }
+                    
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
@@ -353,20 +389,33 @@ variables:
 
 steps:
 - script: |
-    sudo apt-get update
-    sudo apt-get install -y curl jq
+    apt-get update
+    apt-get install -y curl jq tar
   displayName: 'Install dependencies'
 
 - script: |
     chmod +x fcs_cli_iac_scan.sh
     EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh
   displayName: 'Run security scan'
+  env:
+    CS_BASE_API_URL: $(CS_BASE_API_URL)
+    CS_CLIENT_ID: $(CS_CLIENT_ID)
+    CS_CLIENT_SECRET: $(CS_CLIENT_SECRET)
 
 - task: PublishBuildArtifacts@1
   inputs:
-    pathToPublish: 'fcs-scan-results.sarif'
-    artifactName: 'CodeAnalysisLogs'
+    pathToPublish: '.'
+    artifactName: 'SecurityScanResults'
+    includeRootFolder: false
   condition: always()
+  displayName: 'Publish scan results'
+
+- task: PublishSecurityAnalysisResults@3
+  inputs:
+    artifactType: 'sarif'
+    artifactLocation: 'fcs-scan-results.sarif'
+  condition: and(always(), exists('fcs-scan-results.sarif'))
+  displayName: 'Publish SARIF results'
 ```
 
 ### Docker Integration
