@@ -95,18 +95,19 @@ RUN echo "{\
 }" | jq '.' > /home/appuser/.crowdstrike/fcs.json && \
     chmod 600 /home/appuser/.crowdstrike/fcs.json
 
-# Create workspace directory
-RUN mkdir -p /workspace
+# Create workspace directory and temp directory for downloads
+RUN mkdir -p /workspace /tmp/fcs && \
+    chmod 755 /tmp/fcs
 
 # Copy script with root ownership (address informational chown issue)
 COPY fcs_cli_iac_scan.sh /usr/local/bin/
 RUN chmod 555 /usr/local/bin/fcs_cli_iac_scan.sh
 
-# Set proper ownership for user directories only
-RUN chown -R appuser:appgroup /home/appuser /workspace
+# Set proper ownership for user directories
+RUN chown -R appuser:appgroup /home/appuser /workspace /tmp/fcs
 
-# Set working directory
-WORKDIR /workspace
+# Set working directory to a location the user can write to
+WORKDIR /tmp/fcs
 
 # Switch to non-root user
 USER appuser
@@ -125,5 +126,5 @@ LABEL description="CrowdStrike FCS IaC Scanner"
 ENV HOME=/home/appuser
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Default command
-ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh"]
+# Default command - change to workspace directory and run scan
+ENTRYPOINT ["/bin/sh", "-c", "cd /workspace && /usr/local/bin/fcs_cli_iac_scan.sh"]
