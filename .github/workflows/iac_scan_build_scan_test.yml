@@ -1,0 +1,27 @@
+name: Security Scan with Docker
+on: [push, pull_request]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build and Run Scanner
+        env:
+          CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
+          CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
+          CS_BASE_API_URL: ${{ secrets.CROWDSTRIKE_API_URL }}
+        run: |
+          docker build \
+            --build-arg CLIENT_ID="${CS_CLIENT_ID}" \
+            --build-arg CLIENT_SECRET="${CS_CLIENT_SECRET}" \
+            --build-arg API_URL="${CS_BASE_API_URL}" \
+            --platform linux/amd64 \
+            -t fcs-scanner .
+          
+          docker run --rm \
+            --platform linux/amd64 \
+            -v "$(pwd):/workspace" \
+            -e EXIT_WITH_FCS_CODE=true \
+            fcs-scanner
