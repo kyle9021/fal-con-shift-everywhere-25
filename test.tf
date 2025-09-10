@@ -10,12 +10,6 @@ resource "aws_ebs_volume" "web_host_storage" {
     }, {
     git_commit           = "d3439f0f2af62f6fa3521e14d6c27819ef8f12e1"
     git_file             = "terraform/aws/ec2.tf"
-    git_last_modified_at = "2021-05-02 11:17:26"
-    git_last_modified_by = "nimrodkor@users.noreply.github.com"
-    git_modifiers        = "nimrodkor"
-    git_org              = "bridgecrewio"
-    git_repo             = "terragoat"
-    yor_trace            = "c5509daf-10f0-46af-9e03-41989212521d"
   })
 }
 
@@ -28,10 +22,6 @@ resource "aws_ebs_volume" "web_host_storage" {
     git_file             = "terraform/aws/ec2.tf"
     git_last_modified_at = "2020-06-16 14:46:24"
     git_last_modified_by = "nimrodkor@gmail.com"
-    git_modifiers        = "nimrodkor"
-    git_org              = "bridgecrewio"
-    git_repo             = "terragoat"
-    yor_trace            = "b7af1b40-64eb-4519-a1a0-ab198db4b193"
   }
 }
 
