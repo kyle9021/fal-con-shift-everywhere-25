@@ -51,7 +51,7 @@ jobs:
       - name: Upload image sarif file
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: image-scan-results/image_scan-results.sarif
+          sarif_file: image-scan-results.sarif
         
       - name: Run Security Scan
         run: |
