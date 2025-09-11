@@ -150,7 +150,7 @@ set -e
 # Set credentials from CI secrets
 export FALCON_API_URL="$FALCON_API_URL"
 export FALCON_CLIENT_ID="$FALCON_CLIENT_ID"
-export FALCON_CLIENT_SECRET="$FALCON_SECRET_ID"
+export FALCON_CLIENT_SECRET="$FALCON_CLIENT_SECRET"
 
 # Run scan and fail on findings
 EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh ./infrastructure
@@ -304,7 +304,7 @@ jobs:
         env:
           FALCON_API_URL: ${{ secrets.FALCON_API_URL }}
           FALCON_CLIENT_ID: ${{ secrets.FALCON_CLIENT_ID }}
-          FALCON_CLIENT_SECRET: ${{ secrets.FALCON_SECRET_ID }}
+          FALCON_CLIENT_SECRET: ${{ secrets.FALCON_CLIENT_SECRET }}
           SHOW_FULL_RESULTS: true
           EXIT_WITH_FCS_CODE: true
         run: |
@@ -401,7 +401,7 @@ pool:
 variables:
   FALCON_API_URL: $(FALCON_API_URL)
   FALCON_CLIENT_ID: $(FALCON_CLIENT_ID)
-  FALCON_CLIENT_SECRET: $(FALCON_SECRET_ID)
+  FALCON_CLIENT_SECRET: $(FALCON_CLIENT_SECRET)
 
 steps:
 - script: |
