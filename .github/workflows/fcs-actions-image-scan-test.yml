@@ -1,4 +1,4 @@
-name: FCS IAC Security Scan and Build Test using Docker Secrets
+name: FCS-actions-image-scan-test
 on: [push, pull_request]
 
 permissions:
@@ -53,36 +53,3 @@ jobs:
         with:
           sarif_file: ./image-scan-results/
         
-      - name: Run Security Scan
-        run: |
-          docker run --rm \
-            --platform linux/amd64 \
-            -v "$(pwd):/workspace" \
-            -e EXIT_WITH_FCS_CODE=true \
-            -e SHOW_FULL_RESULTS=true \
-            fcs-scanner
-        
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('fcs-scan-results.sarif') != ''
-        with:
-          sarif_file: fcs-scan-results.sarif
-        continue-on-error: true
-          
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-scan-results
-          path: |
-            fcs-scan-results.json
-            fcs-scan-results.sarif
-            fcs-scan-summary.txt
-            
-      - name: Display Results Summary
-        if: always() && hashFiles('fcs-scan-summary.txt') != ''
-        run: |
-          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          head -50 fcs-scan-summary.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
