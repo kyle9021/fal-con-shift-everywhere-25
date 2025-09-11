@@ -15,6 +15,27 @@ A comprehensive shell script that automatically downloads the latest CrowdStrike
 
 ## Prerequisites
 
+## Prerequisites
+
+### Create a CrowdStrike API Client
+
+> [!NOTE]
+> API clients are granted one or more API scopes. Scopes allow access to specific CrowdStrike APIs and describe the actions that an API client can perform. To create an API client, see [API Clients and Keys](https://falcon.crowdstrike.com/login/?unilogin=true&next=/api-clients-and-keys).
+
+Ensure the following API scopes are assigned to the client:
+
+| Scope | Permission |
+|---------|-------------|
+| Infrastructure as Code | *READ* & *WRITE* |
+| Falcon Container CLI | *READ* & *WRITE* |
+| Falcon Container Image | *READ* & *WRITE* |
+
+### Create a GitHub Secret
+
+This action relies on the following environment variables stored as GitHub Secrets: `CROWDSTRIKE_CLIENT_ID`, `CROWDSTRIKE_CLIENT_SECRET`, and `CROWDSTRIKE_API_URL` to authenticate with the CrowdStrike API.
+
+Create a GitHub secret in your repository to store the CrowdStrike API Client secret created from the step above. For more information, see [Creating secrets for a repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
+
 ### Required Dependencies
 - `curl` - For API calls and file downloads
 - `jq` - For JSON processing
@@ -95,25 +116,7 @@ export CS_CLIENT_SECRET="your_client_secret"
 | `CS_CLIENT_ID` | CrowdStrike API Client ID | `abc123def456...` |
 | `CS_CLIENT_SECRET` | CrowdStrike API Client Secret | `xyz789uvw012...` |
 
-#### Optional Configuration
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SCAN_PATH` | Current directory | Directory to scan |
-| `VERSION_OFFSET` | `0` | CLI version offset (0=latest, 1=n-1, etc.) |
-| `GENERATE_SARIF` | `true` | Generate SARIF output file |
-| `GENERATE_SUMMARY` | `true` | Generate human-readable summary |
-| `SHOW_FULL_RESULTS` | `false` | Display complete detailed summary |
-| `EXIT_WITH_FCS_CODE` | `false` | Exit with FCS CLI exit code |
-| `DEBUG` | `false` | Enable debug logging |
 
-#### Proxy Configuration (Auto-detected)
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `HTTP_PROXY` | HTTP proxy URL | `http://proxy.company.com:8080` |
-| `HTTPS_PROXY` | HTTPS proxy URL | `http://proxy.company.com:8080` |
-| `NO_PROXY` | Bypass proxy for hosts | `localhost,127.0.0.1,.company.com` |
-| `PROXY_USER` | Proxy username | `username` |
-| `PROXY_PASS` | Proxy password | `password` |
 
 ### CrowdStrike Regions
 
