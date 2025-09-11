@@ -28,7 +28,7 @@ Ensure the following API scopes are assigned to the client:
 | Falcon Container CLI | *READ* & *WRITE* |
 | Falcon Container Image | *READ* & *WRITE* |
 
-### Create a GitHub Secret
+### Create GitHub Secrets
 
 This action relies on the following environment variables stored as GitHub Secrets: `FALCON_CLIENT_ID`, `FALCON_SECRET_ID`, and `FALCON_API_URL` to authenticate with the CrowdStrike API.
 
