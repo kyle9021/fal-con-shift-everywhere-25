@@ -18,7 +18,7 @@ jobs:
       - name: Create secret files
         run: |
           echo "${{ secrets.FALCON_CLIENT_ID }}" > /tmp/client_id
-          echo "${{ secrets.FALCON_SECRET_ID }}" > /tmp/client_secret
+          echo "${{ secrets.FALCON_CLIENT_SECRET }}" > /tmp/client_secret
           echo "${{ secrets.FALCON_API_URL }}" > /tmp/api_url
         
       - name: Build Docker image with secrets
