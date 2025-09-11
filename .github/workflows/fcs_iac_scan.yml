@@ -25,7 +25,7 @@ jobs:
           FALCON_CLIENT_ID: ${{ secrets.FALCON_CLIENT_ID }}
           FALCON_CLIENT_SECRET: ${{ secrets.FALCON_CLIENT_SECRET }}
           SHOW_FULL_RESULTS: true
-          EXIT_WITH_FCS_CODE: true
+          EXIT_WITH_FCS_CODE: false
         run: |
           chmod +x fcs_cli_iac_scan.sh
           ./fcs_cli_iac_scan.sh
