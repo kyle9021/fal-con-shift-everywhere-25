@@ -1,6 +1,6 @@
 # CrowdStrike FCS CLI Downloader and Scanner
 
-A comprehensive shell script that automatically downloads the latest CrowdStrike Falcon Cloud Security (FCS) CLI tool and executes Infrastructure as Code (IaC) security scans with enhanced reporting capabilities..
+A comprehensive shell script that automatically downloads the latest CrowdStrike Falcon Cloud Security (FCS) CLI tool and executes Infrastructure as Code (IaC) security scans with enhanced reporting capabilities.
 
 ## Features
 
@@ -12,8 +12,6 @@ A comprehensive shell script that automatically downloads the latest CrowdStrike
 - **Comprehensive Reporting**: Detailed security findings with remediation guidance
 - **Cross-Platform**: Supports Linux, macOS, and other Unix-like systems
 - **Multi-Architecture**: Automatically detects and downloads correct binaries for amd64 and arm64 architectures
-
-## Prerequisites
 
 ## Prerequisites
 
@@ -32,9 +30,9 @@ Ensure the following API scopes are assigned to the client:
 
 ### Create a GitHub Secret
 
-This action relies on the following environment variables stored as GitHub Secrets: `CROWDSTRIKE_CLIENT_ID`, `CROWDSTRIKE_CLIENT_SECRET`, and `CROWDSTRIKE_API_URL` to authenticate with the CrowdStrike API.
+This action relies on the following environment variables stored as GitHub Secrets: `FALCON_CLIENT_ID`, `FALCON_SECRET_ID`, and `FALCON_API_URL` to authenticate with the CrowdStrike API.
 
-Create a GitHub secret in your repository to store the CrowdStrike API Client secret created from the step above. For more information, see [Creating secrets for a repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
+Create GitHub secrets in your repository to store the CrowdStrike API Client secret, Client ID, and API url created from the step above. For more information, see [Creating secrets for a repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
 
 ### Required Dependencies
 - `curl` - For API calls and file downloads
@@ -99,9 +97,9 @@ brew install curl jq
 ### With Environment Variables
 ```bash
 # Pre-configure credentials
-export CS_BASE_API_URL="https://api.us-2.crowdstrike.com"
-export CS_CLIENT_ID="your_client_id"
-export CS_CLIENT_SECRET="your_client_secret"
+export FALCON_API_URL="https://api.us-2.crowdstrike.com"
+export FALCON_CLIENT_ID="your_client_id"
+export FALCON_CLIENT_SECRET="your_client_secret"
 ./fcs_cli_iac_scan.sh
 ```
 
@@ -112,11 +110,9 @@ export CS_CLIENT_SECRET="your_client_secret"
 #### Required (if not set interactively)
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `CS_BASE_API_URL` | CrowdStrike API base URL | `https://api.crowdstrike.com` |
-| `CS_CLIENT_ID` | CrowdStrike API Client ID | `abc123def456...` |
-| `CS_CLIENT_SECRET` | CrowdStrike API Client Secret | `xyz789uvw012...` |
-
-
+| `FALCON_API_URL` | CrowdStrike API base URL | `https://api.crowdstrike.com` |
+| `FALCON_CLIENT_ID` | CrowdStrike API Client ID | `abc123def456...` |
+| `FALCON_CLIENT_SECRET` | CrowdStrike API Client Secret | `xyz789uvw012...` |
 
 ### CrowdStrike Regions
 
@@ -152,9 +148,9 @@ EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh
 set -e
 
 # Set credentials from CI secrets
-export CS_BASE_API_URL="$CROWDSTRIKE_API_URL"
-export CS_CLIENT_ID="$CROWDSTRIKE_CLIENT_ID"
-export CS_CLIENT_SECRET="$CROWDSTRIKE_CLIENT_SECRET"
+export FALCON_API_URL="$FALCON_API_URL"
+export FALCON_CLIENT_ID="$FALCON_CLIENT_ID"
+export FALCON_CLIENT_SECRET="$FALCON_SECRET_ID"
 
 # Run scan and fail on findings
 EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh ./infrastructure
@@ -245,9 +241,9 @@ The script generates multiple output formats:
 #### Authentication Errors
 ```bash
 # Verify credentials
-curl -X POST "$CS_BASE_API_URL/oauth2/token" \
+curl -X POST "$FALCON_API_URL/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id=$CS_CLIENT_ID&client_secret=$CS_CLIENT_SECRET"
+  -d "client_id=$FALCON_CLIENT_ID&client_secret=$FALCON_CLIENT_SECRET"
 ```
 
 #### Proxy Issues
@@ -306,9 +302,9 @@ jobs:
         
       - name: Run FCS Scan
         env:
-          CS_BASE_API_URL: ${{ secrets.CROWDSTRIKE_API_URL }}
-          CS_CLIENT_ID: ${{ secrets.CROWDSTRIKE_CLIENT_ID }}
-          CS_CLIENT_SECRET: ${{ secrets.CROWDSTRIKE_CLIENT_SECRET }}
+          FALCON_API_URL: ${{ secrets.FALCON_API_URL }}
+          FALCON_CLIENT_ID: ${{ secrets.FALCON_CLIENT_ID }}
+          FALCON_CLIENT_SECRET: ${{ secrets.FALCON_SECRET_ID }}
           SHOW_FULL_RESULTS: true
           EXIT_WITH_FCS_CODE: true
         run: |
@@ -339,9 +335,9 @@ pipeline {
     agent any
     
     environment {
-        CS_BASE_API_URL = credentials('crowdstrike-api-url')
-        CS_CLIENT_ID = credentials('crowdstrike-client-id')
-        CS_CLIENT_SECRET = credentials('crowdstrike-client-secret')
+        FALCON_API_URL = credentials('falcon-api-url')
+        FALCON_CLIENT_ID = credentials('falcon-client-id')
+        FALCON_CLIENT_SECRET = credentials('falcon-secret-id')
     }
     
     stages {
@@ -403,9 +399,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  CS_BASE_API_URL: $(CROWDSTRIKE_API_URL)
-  CS_CLIENT_ID: $(CROWDSTRIKE_CLIENT_ID)
-  CS_CLIENT_SECRET: $(CROWDSTRIKE_CLIENT_SECRET)
+  FALCON_API_URL: $(FALCON_API_URL)
+  FALCON_CLIENT_ID: $(FALCON_CLIENT_ID)
+  FALCON_CLIENT_SECRET: $(FALCON_SECRET_ID)
 
 steps:
 - script: |
@@ -418,9 +414,9 @@ steps:
     EXIT_WITH_FCS_CODE=true ./fcs_cli_iac_scan.sh
   displayName: 'Run security scan'
   env:
-    CS_BASE_API_URL: $(CS_BASE_API_URL)
-    CS_CLIENT_ID: $(CS_CLIENT_ID)
-    CS_CLIENT_SECRET: $(CS_CLIENT_SECRET)
+    FALCON_API_URL: $(FALCON_API_URL)
+    FALCON_CLIENT_ID: $(FALCON_CLIENT_ID)
+    FALCON_CLIENT_SECRET: $(FALCON_CLIENT_SECRET)
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -537,12 +533,12 @@ ENV HOME=/home/nonroot \
 ENTRYPOINT ["/usr/local/bin/fcs_cli_iac_scan.sh", "/workspace"]
 ```
 
-Usage with Docker if buillding locally:
+Usage with Docker if building locally:
 ```bash
 # Create secrets
-echo "$CS_CLIENT_ID" > /tmp/client_id
-echo "$CS_CLIENT_SECRET" > /tmp/client_secret
-echo "$CS_BASE_API_URL" > /tmp/api_url
+echo "$FALCON_CLIENT_ID" > /tmp/client_id
+echo "$FALCON_CLIENT_SECRET" > /tmp/client_secret
+echo "$FALCON_API_URL" > /tmp/api_url
 
 # Build
 docker build \
@@ -583,6 +579,7 @@ rm -f /tmp/client_id /tmp/client_secret /tmp/api_url
 ./fcs_cli_iac_scan.sh --help
 ./fcs_cli_iac_scan.sh -h
 ```
+
 ## Security Best Practices
 
 ### Credential Management
@@ -605,8 +602,6 @@ rm -f /tmp/client_id /tmp/client_secret /tmp/api_url
 - Minimal base images (Alpine Linux) for reduced attack surface
 - Secrets are handled securely using Docker BuildKit secrets
 - Health checks are included for container monitoring
-
-
 
 ## Contributing
 
@@ -633,5 +628,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: Check the script's built-in help: `./fcs_cli_iac_scan.sh --help`
 - **CrowdStrike Support**: For FCS-specific issues, contact CrowdStrike support
 
-
 **Note**: This script is not officially supported by CrowdStrike. It's a community tool designed to simplify FCS CLI usage and integration.
+
+## Summary of Changes
+
+I've updated the README.md with the following changes:
+
+### GitHub Secrets
+- `CROWDSTRIKE_CLIENT_ID` → `FALCON_CLIENT_ID`
+- `CROWDSTRIKE_CLIENT_SECRET` → `FALCON_SECRET_ID` 
+- `CROWDSTRIKE_API_URL` → `FALCON_API_URL`
+
+### Environment Variables
+- `CS_BASE_API_URL` → `FALCON_API_URL`
+- `CS_CLIENT_ID` → `FALCON_CLIENT_ID`
+- `CS_CLIENT_SECRET` → `FALCON_CLIENT_SECRET`
+
+### Updated Sections
+1. **Prerequisites section** - Updated GitHub secret names
+2. **Configuration table** - Updated environment variable names
+3. **All usage examples** - Updated variable references
+4. **CI/CD integration examples** (GitHub Actions, Jenkins, Azure DevOps) - Updated secret/variable names
+5. **Troubleshooting section** - Updated variable names in commands
+6. **Docker integration** - Updated variable names in examples
+
+The documentation now consistently uses the new `FALCON_*` naming convention while maintaining all functionality and examples.
