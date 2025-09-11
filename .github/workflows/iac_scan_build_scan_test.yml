@@ -35,17 +35,26 @@ jobs:
         run: |
           rm -f /tmp/client_id /tmp/client_secret /tmp/api_url
 
-      - name: Scan Container Image
+      - name: Scan Container Image using FCS-action
         uses: crowdstrike/fcs-action@v2.0.1
         with:
           falcon_client_id: ${{ secrets.FALCON_CLIENT_ID }}
           falcon_region: 'us-1'
           scan_type: image
           image: fcs-scanner:latest
-          output_path: './image-scan-results/'
+          output_path: './image-scan-results/image_scan_results.json'
           report_formats: json
         env:
           FALCON_CLIENT_SECRET: ${{ secrets.FALCON_CLIENT_SECRET }}
+      
+      - name: Show json scan results
+        run: |
+          cat image-scan-results/*.json
+
+      - name: Upload image sarif file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: image-scan-results/
         
       - name: Run Security Scan
         run: |
