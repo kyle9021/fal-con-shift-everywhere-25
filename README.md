@@ -30,7 +30,7 @@ Ensure the following API scopes are assigned to the client:
 
 ### Create GitHub Secrets
 
-This action relies on the following environment variables stored as GitHub Secrets: `FALCON_CLIENT_ID`, `FALCON_SECRET_ID`, and `FALCON_API_URL` to authenticate with the CrowdStrike API.
+This action relies on the following environment variables stored as GitHub Secrets: `FALCON_CLIENT_ID`, `FALCON_CLIENT_SECRET`, and `FALCON_API_URL` to authenticate with the CrowdStrike API.
 
 Create GitHub secrets in your repository to store the CrowdStrike API Client secret, Client ID, and API url created from the step above. For more information, see [Creating secrets for a repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
 
@@ -630,26 +630,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Note**: This script is not officially supported by CrowdStrike. It's a community tool designed to simplify FCS CLI usage and integration.
 
-## Summary of Changes
 
-I've updated the README.md with the following changes:
-
-### GitHub Secrets
-- `CROWDSTRIKE_CLIENT_ID` → `FALCON_CLIENT_ID`
-- `CROWDSTRIKE_CLIENT_SECRET` → `FALCON_SECRET_ID` 
-- `CROWDSTRIKE_API_URL` → `FALCON_API_URL`
-
-### Environment Variables
-- `CS_BASE_API_URL` → `FALCON_API_URL`
-- `CS_CLIENT_ID` → `FALCON_CLIENT_ID`
-- `CS_CLIENT_SECRET` → `FALCON_CLIENT_SECRET`
-
-### Updated Sections
-1. **Prerequisites section** - Updated GitHub secret names
-2. **Configuration table** - Updated environment variable names
-3. **All usage examples** - Updated variable references
-4. **CI/CD integration examples** (GitHub Actions, Jenkins, Azure DevOps) - Updated secret/variable names
-5. **Troubleshooting section** - Updated variable names in commands
-6. **Docker integration** - Updated variable names in examples
-
-The documentation now consistently uses the new `FALCON_*` naming convention while maintaining all functionality and examples.
