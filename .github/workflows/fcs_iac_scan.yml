@@ -18,14 +18,6 @@ jobs:
           curl --version
           jq --version
           tar --version
-      - name: Test Vars
-        run: |
-          echo "Repository: $GITHUB_REPOSITORY"
-          echo "OS: $RUNNER_OS"
-          echo "Architecture: $RUNNER_ARCH"
-          echo "Working directory: $GITHUB_WORKSPACE"
-    
-
         
       - name: Run FCS Scan
         env:
@@ -36,8 +28,13 @@ jobs:
           SHOW_FULL_RESULTS: true
           EXIT_WITH_FCS_CODE: true
         run: |
-          pwd
-          ls -a
+          echo "=== Environment Info ==="
+          echo "Repository: ${{ github.repository }}"
+          echo "Working Dir: $(pwd)"
+          echo "Git URL: git::https://github.com/${{ github.repository }}.git"
+    
+          echo "=== Testing Git Access ==="
+          git ls-remote https://github.com/${{ github.repository }}.git || echo "Git access failed"
           chmod +x fcs_cli_iac_scan.sh
           ./fcs_cli_iac_scan.sh
         
