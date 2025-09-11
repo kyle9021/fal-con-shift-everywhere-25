@@ -30,11 +30,14 @@ jobs:
         run: |
           echo "=== Environment Info ==="
           echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
           echo "Working Dir: $(pwd)"
-          echo "Git URL: git::https://github.com/${{ github.repository }}.git"
+          echo "Git URL: ${SCAN_PATH}"
     
           echo "=== Testing Git Access ==="
           git ls-remote https://github.com/${{ github.repository }}.git || echo "Git access failed"
+
           chmod +x fcs_cli_iac_scan.sh
           ./fcs_cli_iac_scan.sh
         
