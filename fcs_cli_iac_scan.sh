@@ -25,9 +25,9 @@
 # Environment Variables:
 #   SCAN_PATH        - Override scan directory via environment variable
 #   VERSION_OFFSET   - Override version offset via environment variable
-#   CS_BASE_API_URL  - CrowdStrike API base URL
-#   CS_CLIENT_ID     - CrowdStrike API Client ID
-#   CS_CLIENT_SECRET - CrowdStrike API Client Secret
+#   FALCON_API_URL   - CrowdStrike API base URL
+#   FALCON_CLIENT_ID - CrowdStrike API Client ID
+#   FALCON_CLIENT_SECRET - CrowdStrike API Client Secret
 #   GENERATE_SARIF   - Generate SARIF output (default: true)
 #   GENERATE_SUMMARY - Generate human-readable summary (default: true)
 #   SHOW_FULL_RESULTS - Display full human-readable summary at end (default: false)
@@ -57,9 +57,9 @@
 # =============================================================================
 
 # Default values - will prompt for input if not set via environment variables
-CS_BASE_API_URL="${CS_BASE_API_URL:-}"
-CS_CLIENT_ID="${CS_CLIENT_ID:-}"
-CS_CLIENT_SECRET="${CS_CLIENT_SECRET:-}"
+FALCON_API_URL="${FALCON_API_URL:-}"
+FALCON_CLIENT_ID="${FALCON_CLIENT_ID:-}"
+FALCON_CLIENT_SECRET="${FALCON_CLIENT_SECRET:-}"
 GENERATE_SARIF="${GENERATE_SARIF:-true}"
 GENERATE_SUMMARY="${GENERATE_SUMMARY:-true}"
 SHOW_FULL_RESULTS="${SHOW_FULL_RESULTS:-false}"
@@ -153,9 +153,9 @@ Arguments:
 Environment Variables:
   SCAN_PATH        Override scan directory
   VERSION_OFFSET   Override version offset
-  CS_BASE_API_URL  CrowdStrike API base URL
-  CS_CLIENT_ID     CrowdStrike Client ID
-  CS_CLIENT_SECRET CrowdStrike Client Secret
+  FALCON_API_URL   CrowdStrike API base URL
+  FALCON_CLIENT_ID CrowdStrike Client ID
+  FALCON_CLIENT_SECRET CrowdStrike Client Secret
   GENERATE_SARIF   Generate SARIF output (default: true)
   GENERATE_SUMMARY Generate human-readable summary (default: true)
   SHOW_FULL_RESULTS Display full human-readable summary at end (default: false)
@@ -179,9 +179,9 @@ Examples:
   SCAN_PATH=./infrastructure VERSION_OFFSET=1 ./fcs_cli_iac_scan.sh
 
   # Pre-setting credentials
-  CS_BASE_API_URL=https://api.us-2.crowdstrike.com \
-  CS_CLIENT_ID=your_client_id \
-  CS_CLIENT_SECRET=your_client_secret \
+  FALCON_API_URL=https://api.us-2.crowdstrike.com \
+  FALCON_CLIENT_ID=your_client_id \
+  FALCON_CLIENT_SECRET=your_client_secret \
   ./fcs_cli_iac_scan.sh
 
   # Show full human-readable summary at end
@@ -343,11 +343,11 @@ curl_with_proxy() {
 # Returns: 0 if successful, 1 if failed
 #
 test_proxy_connectivity() {
-    if [ -n "$CS_BASE_API_URL" ]; then
+    if [ -n "$FALCON_API_URL" ]; then
         log "INFO" "Testing proxy connectivity to CrowdStrike API..."
 
         # Test basic connectivity
-        if curl_with_proxy --silent --connect-timeout 10 --max-time 30 --head "$CS_BASE_API_URL" >/dev/null 2>&1; then
+        if curl_with_proxy --silent --connect-timeout 10 --max-time 30 --head "$FALCON_API_URL" >/dev/null 2>&1; then
             log "INFO" "Proxy connectivity test successful"
             return 0
         else
@@ -774,12 +774,12 @@ convert_json_to_sarif() {
 
 #
 # Checks for credentials in multiple locations
-# Sets global variables: CS_BASE_API_URL, CS_CLIENT_ID, CS_CLIENT_SECRET
+# Sets global variables: FALCON_API_URL, FALCON_CLIENT_ID, FALCON_CLIENT_SECRET
 # Returns: 0 if credentials found, 1 if not found
 #
 get_credentials() {
     # First check environment variables
-    if [ -n "$CS_BASE_API_URL" ] && [ -n "$CS_CLIENT_ID" ] && [ -n "$CS_CLIENT_SECRET" ]; then
+    if [ -n "$FALCON_API_URL" ] && [ -n "$FALCON_CLIENT_ID" ] && [ -n "$FALCON_CLIENT_SECRET" ]; then
         log "INFO" "Using credentials from environment variables"
         return 0
     fi
@@ -800,11 +800,11 @@ get_credentials() {
         profile_name=$(jq -r '.profile // "default"' "$config_file")
 
         # Extract credentials from the specified profile
-        CS_CLIENT_ID=$(jq -r --arg profile "$profile_name" '.profiles[$profile].client_id // empty' "$config_file")
-        CS_CLIENT_SECRET=$(jq -r --arg profile "$profile_name" '.profiles[$profile].client_secret // empty' "$config_file")
-        CS_BASE_API_URL=$(jq -r --arg profile "$profile_name" '.profiles[$profile].falcon_domains.api // empty' "$config_file")
+        FALCON_CLIENT_ID=$(jq -r --arg profile "$profile_name" '.profiles[$profile].client_id // empty' "$config_file")
+        FALCON_CLIENT_SECRET=$(jq -r --arg profile "$profile_name" '.profiles[$profile].client_secret // empty' "$config_file")
+        FALCON_API_URL=$(jq -r --arg profile "$profile_name" '.profiles[$profile].falcon_domains.api // empty' "$config_file")
 
-        if [ -n "$CS_BASE_API_URL" ] && [ -n "$CS_CLIENT_ID" ] && [ -n "$CS_CLIENT_SECRET" ]; then
+        if [ -n "$FALCON_API_URL" ] && [ -n "$FALCON_CLIENT_ID" ] && [ -n "$FALCON_CLIENT_SECRET" ]; then
             log "INFO" "Using credentials from config file (profile: $profile_name)"
             return 0
         else
@@ -815,7 +815,7 @@ get_credentials() {
     # If we get here, no valid credentials were found
     if is_non_interactive; then
         log "ERROR" "No valid credentials found in environment variables or config file"
-        log "ERROR" "Please set CS_BASE_API_URL, CS_CLIENT_ID, and CS_CLIENT_SECRET environment variables"
+        log "ERROR" "Please set FALCON_API_URL, FALCON_CLIENT_ID, and FALCON_CLIENT_SECRET environment variables"
         log "ERROR" "Or provide a valid configuration file at: $config_file"
         return 1
     fi
@@ -828,12 +828,12 @@ get_credentials() {
 
 #
 # Prompts user for CrowdStrike credentials if not already set
-# Sets global variables: CS_BASE_API_URL, CS_CLIENT_ID, CS_CLIENT_SECRET
+# Sets global variables: FALCON_API_URL, FALCON_CLIENT_ID, FALCON_CLIENT_SECRET
 #
 prompt_for_credentials() {
     if is_non_interactive; then
         log "ERROR" "Running in non-interactive mode but credentials are not set"
-        log "ERROR" "Please set CS_BASE_API_URL, CS_CLIENT_ID, and CS_CLIENT_SECRET environment variables"
+        log "ERROR" "Please set FALCON_API_URL, FALCON_CLIENT_ID, and FALCON_CLIENT_SECRET environment variables"
         exit 6
     fi
 
@@ -841,7 +841,7 @@ prompt_for_credentials() {
     printf "\nPlease provide your CrowdStrike API credentials:\n\n" >&2
 
     # Prompt for API URL if not set
-    if [ -z "$CS_BASE_API_URL" ]; then
+    if [ -z "$FALCON_API_URL" ]; then
         printf "Select your CrowdStrike region:\n" >&2
         printf "  1) US-1 (Commercial)    - https://api.crowdstrike.com\n" >&2
         printf "  2) US-2 (Commercial)    - https://api.us-2.crowdstrike.com\n" >&2
@@ -855,30 +855,30 @@ prompt_for_credentials() {
 
             case "$selection" in
                 1)
-                    CS_BASE_API_URL="https://api.crowdstrike.com"
+                    FALCON_API_URL="https://api.crowdstrike.com"
                     break
                     ;;
                 2)
-                    CS_BASE_API_URL="https://api.us-2.crowdstrike.com"
+                    FALCON_API_URL="https://api.us-2.crowdstrike.com"
                     break
                     ;;
                 3)
-                    CS_BASE_API_URL="https://api.eu-1.crowdstrike.com"
+                    FALCON_API_URL="https://api.eu-1.crowdstrike.com"
                     break
                     ;;
                 4)
-                    CS_BASE_API_URL="https://api.laggar.gcw.crowdstrike.com"
+                    FALCON_API_URL="https://api.laggar.gcw.crowdstrike.com"
                     break
                     ;;
                 5)
-                    CS_BASE_API_URL="https://api.us-gov-2.crowdstrike.mil"
+                    FALCON_API_URL="https://api.us-gov-2.crowdstrike.mil"
                     break
                     ;;
                 6)
                     while true; do
                         custom_url=$(prompt_user "Enter custom CrowdStrike API URL")
                         if validate_api_url "$custom_url"; then
-                            CS_BASE_API_URL="$custom_url"
+                            FALCON_API_URL="$custom_url"
                             break 2  # Break out of both loops
                         else
                             printf "Invalid API URL. Please enter a valid CrowdStrike API URL.\n" >&2
@@ -891,14 +891,14 @@ prompt_for_credentials() {
             esac
         done
 
-        log "INFO" "Selected API URL: $CS_BASE_API_URL"
+        log "INFO" "Selected API URL: $FALCON_API_URL"
     fi
 
     # Prompt for Client ID if not set
-    if [ -z "$CS_CLIENT_ID" ]; then
+    if [ -z "$FALCON_CLIENT_ID" ]; then
         while true; do
-            CS_CLIENT_ID=$(prompt_user "Enter CrowdStrike Client ID")
-            if [ -n "$CS_CLIENT_ID" ]; then
+            FALCON_CLIENT_ID=$(prompt_user "Enter CrowdStrike Client ID")
+            if [ -n "$FALCON_CLIENT_ID" ]; then
                 break
             fi
             printf "Client ID cannot be empty. Please try again.\n" >&2
@@ -906,10 +906,10 @@ prompt_for_credentials() {
     fi
 
     # Prompt for Client Secret if not set
-    if [ -z "$CS_CLIENT_SECRET" ]; then
+    if [ -z "$FALCON_CLIENT_SECRET" ]; then
         while true; do
-            CS_CLIENT_SECRET=$(prompt_user "Enter CrowdStrike Client Secret" "" "hidden")
-            if [ -n "$CS_CLIENT_SECRET" ]; then
+            FALCON_CLIENT_SECRET=$(prompt_user "Enter CrowdStrike Client Secret" "" "hidden")
+            if [ -n "$FALCON_CLIENT_SECRET" ]; then
                 break
             fi
             printf "Client Secret cannot be empty. Please try again.\n" >&2
@@ -1015,10 +1015,10 @@ authenticate() {
     log "INFO" "Authenticating with CrowdStrike API..."
 
     oauth_response=$(curl_with_proxy --silent --request POST \
-                          --url "$CS_BASE_API_URL/oauth2/token" \
+                          --url "$FALCON_API_URL/oauth2/token" \
                           --header "Accept: application/json" \
                           --header "Content-Type: application/x-www-form-urlencoded" \
-                          --data-raw "client_id=$CS_CLIENT_ID&client_secret=$CS_CLIENT_SECRET")
+                          --data-raw "client_id=$FALCON_CLIENT_ID&client_secret=$FALCON_CLIENT_SECRET")
 
     CS_TOKEN=$(printf '%s' "$oauth_response" | jq -r '.access_token')
 
@@ -1042,7 +1042,7 @@ get_available_files() {
     log "INFO" "Retrieving available FCS CLI files..."
 
     DL_ENUMERATE_RESPONSE=$(curl_with_proxy --silent --request GET \
-                                 --url "$CS_BASE_API_URL/csdownloads/entities/files/enumerate/v1" \
+                                 --url "$FALCON_API_URL/csdownloads/entities/files/enumerate/v1" \
                                  --header "Authorization: Bearer $CS_TOKEN" \
                                  --header "Accept: application/json" \
                                  --header "Content-Type: application/json")
@@ -1108,7 +1108,7 @@ get_download_url() {
     log "INFO" "Obtaining download URL for $FILE_NAME..."
 
     presigned_response=$(curl_with_proxy --silent --request GET \
-                              --url "$CS_BASE_API_URL/csdownloads/entities/files/download/v1?file_name=$FILE_NAME&file_version=$FILE_VERSION" \
+                              --url "$FALCON_API_URL/csdownloads/entities/files/download/v1?file_name=$FILE_NAME&file_version=$FILE_VERSION" \
                               --header "Authorization: Bearer $CS_TOKEN" \
                               --header "Accept: application/json" \
                               --header "Content-Type: application/json")
@@ -1230,8 +1230,8 @@ run_scan() {
 
     # Run the FCS scan and capture both stdout and stderr
     ./fcs iac scan \
-        --client-id "$CS_CLIENT_ID" \
-        --client-secret "$CS_CLIENT_SECRET" \
+        --client-id "$FALCON_CLIENT_ID" \
+        --client-secret "$FALCON_CLIENT_SECRET" \
         --falcon-region "$CS_REGION" \
         --path "$SCAN_PATH" \
         --upload-results > "$temp_output" 2>&1
@@ -1374,7 +1374,7 @@ main() {
     test_proxy_connectivity
 
     # Determine CrowdStrike region
-    CS_REGION=$(map_api_to_region "$CS_BASE_API_URL")
+    CS_REGION=$(map_api_to_region "$FALCON_API_URL")
     log "INFO" "CrowdStrike region: $CS_REGION"
 
     # Validate dependencies
