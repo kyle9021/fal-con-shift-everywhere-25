@@ -34,6 +34,11 @@ jobs:
           echo "Commit: ${{ github.sha }}"
           echo "Working Dir: $(pwd)"
           echo "Git URL: ${SCAN_PATH}"
+
+          git remote -v
+          git status
+          git log --oneline -1
+
     
           echo "=== Testing Git Access ==="
           git ls-remote https://github.com/${{ github.repository }}.git || echo "Git access failed"
