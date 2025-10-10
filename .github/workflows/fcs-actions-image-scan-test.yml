@@ -39,9 +39,10 @@ jobs:
         uses: crowdstrike/fcs-action@v2.0.1
         with:
           falcon_client_id: ${{ secrets.FALCON_CLIENT_ID }}
-          falcon_region: 'us-1'
-          scan_type: iac
+          falcon_region: 'us-1
+          path: ./
           image: fcs-scanner:latest
+          
           output_path: image-scan-results/image_scan_results.json
           report_formats: sarif
         env:
