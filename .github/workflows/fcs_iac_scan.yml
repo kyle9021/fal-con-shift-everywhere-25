@@ -1,4 +1,4 @@
-name: FCS-actions-image-scan-test
+name: FCS IaC Security Scan
 on: [push, pull_request]
 
 permissions:
@@ -12,47 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Verify dependencies (optional)
+        run: |
+          echo "Checking dependencies..."
+          curl --version
+          jq --version
+          tar --version
         
-      - name: Create secret files
-        run: |
-          echo "${{ secrets.FALCON_CLIENT_ID }}" > /tmp/client_id
-          echo "${{ secrets.FALCON_CLIENT_SECRET }}" > /tmp/client_secret
-          echo "${{ secrets.FALCON_API_URL }}" > /tmp/api_url
-        
-      - name: Build Docker image with secrets
-        run: |
-          docker build \
-            --secret id=client_id,src=/tmp/client_id \
-            --secret id=client_secret,src=/tmp/client_secret \
-            --secret id=api_url,src=/tmp/api_url \
-            --platform linux/amd64 \
-            -t fcs-scanner .
-            
-      - name: Clean up secret files
-        if: always()
-        run: |
-          rm -f /tmp/client_id /tmp/client_secret /tmp/api_url
-
-      - name: Scan Container Image using FCS-action
-        uses: crowdstrike/fcs-action@v2.0.2
-        with:
-          falcon_client_id: ${{ secrets.FALCON_CLIENT_ID }}
-          falcon_region: 'us-1'
-          path: ./
-          output_path: "./scan_results.sarif"
-          report_formats: sarif
+      - name: Run FCS Scan
         env:
+          FALCON_API_URL: ${{ secrets.FALCON_API_URL }}
+          FALCON_CLIENT_ID: ${{ secrets.FALCON_CLIENT_ID }}
           FALCON_CLIENT_SECRET: ${{ secrets.FALCON_CLIENT_SECRET }}
-      
-
-      - name: Upload image sarif file
+          SHOW_FULL_RESULTS: true
+          EXIT_WITH_FCS_CODE: false
+        run: |
+          chmod +x fcs_cli_iac_scan.sh
+          ./fcs_cli_iac_scan.sh
+        
+      - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('fcs-scan-results.sarif') != ''
         with:
-          sarif_file: ./scan_results.sarif
-
-
-
-
-
+          sarif_file: fcs-scan-results.sarif
+        continue-on-error: true
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            fcs-scan-results.json
+            fcs-scan-results.sarif
+            fcs-scan-summary.txt
