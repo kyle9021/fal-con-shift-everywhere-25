@@ -40,8 +40,9 @@ jobs:
         with:
           falcon_client_id: ${{ secrets.FALCON_CLIENT_ID }}
           falcon_region: 'us-1'
-          path: ./
-          output_path: "./scan_results.sarif"
+          scan_type: image
+          image: fcs-scanner:latest
+          output_path: image-scan-results/image_scan_results.json
           report_formats: sarif
         env:
           FALCON_CLIENT_SECRET: ${{ secrets.FALCON_CLIENT_SECRET }}
@@ -50,5 +51,5 @@ jobs:
       - name: Upload image sarif file
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ./scan_results.sarif
+          sarif_file: ./image-scan-results/
         
